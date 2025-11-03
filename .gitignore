@@ -1,0 +1,3 @@
+external/*
+.env/*
+build/*

@@ -1,3 +1,6 @@
 #pragma once
 
-void HelloFromGraphics();
+class Device;
+class VK;
+
+void CreateGraphicSystem(Device& device, VK& vulkan);
