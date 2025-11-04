@@ -2,6 +2,8 @@
 #include "vk_debug.h"
 #include "vk_helper.h"
 #include "vk_defines.h"
+#include "MemoryVK/MemoryVK.h"
+
 
 #include "core/device.h"
 
@@ -173,12 +175,14 @@ int VK::Init(){
 }
 
 
-
 void VK::Draw(){
 
 };
 
 void VK::TestTriangle(){
+
+  VkDeviceMemory a;
+  vkcall(MemoryVK::Allocate(device, &a, 10, 0))
 
   //vertex buffer
   _TmpCube.vbo = vkh::CreateBuffer(device, _TmpCube.data.VertexBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -202,3 +206,68 @@ void VK::Destroy(){
   vkDestroyInstance(instance, nullptr);
 
 }
+
+struct dat{ 
+  uint32_t flags; //4
+  size_t bytes; //8
+};//pad4
+
+struct Node{
+  dat data; //16
+  uint32_t* next;//8
+};//24
+
+struct Heap{
+  Heap* next; //8
+  Node node; //24
+};//32
+  
+int x = sizeof(Heap);
+
+
+struct fdat{
+uint32_t flags;//4
+  size_t bytes; //8
+};//16
+
+struct fNode{
+  uint8_t next;//1
+  dat data;//12
+};//24
+
+1->2->6->8->16
+struct fHeap{
+  uint8_t next; //1
+  Node node; //24
+};//32
+
+
+int n = sizeof(fHeap);
+
+/**
+      [Heap]
+        /\
+       /  \
+      /    \
+     /      \
+  [node]    [Heap]
+    /\        /\
+   /  [dat]   etc..
+  /
+ [type*] 
+ /
+ /
+
+
+ then after we build it we collapse to flat buffer
+
+              contigues
+ [|Heap||dat|type-0|type-1||Heap||dat|type-0]
+ [|Heap {Next} {node}->|type-0| -> |type-1||Heap {Next} {node}->|type-0|]
+
+ //we can get a heaps types by heap + dat and thats a list
+ //and we also have a list of heaps
+ //all contigues in memory making it fast and scalable.
+ //and this will never really changed after the first flatten unless we switch gpu
+ //but we could just build it back up
+*/
