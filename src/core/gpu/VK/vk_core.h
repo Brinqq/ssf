@@ -10,6 +10,11 @@
 struct Device;
 
 class VK{
+static constexpr uint64_t _StagingBufferSize = 1000000;
+
+static constexpr int _macosDeviceLocalType = 0;
+static constexpr int _macosHostAccessType = 1;
+
     VkInstance instance;
     VkDevice device;
     VkPhysicalDevice gpu;
@@ -27,6 +32,9 @@ class VK{
 
     std::vector<QueueFamily> queueFamilies;
 
+    std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[2];
+
+    
 
     struct{
       const ssf::prefabs::StandardCube<uint16_t> data;
