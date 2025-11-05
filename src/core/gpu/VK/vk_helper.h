@@ -32,6 +32,10 @@ struct PipelineState{
   VkPipelineLayout layout;
 };
 
+enum VkhImageFlags{
+  Multisampling = 0x0,
+};
+
 //util functions
 void GenerateQueueFamilies(VkPhysicalDevice device, QueueFamily* const pDat, size_t& bytes);
 VkPhysicalDevice GetGpu(VkInstance& instance);
@@ -42,6 +46,8 @@ VkColorSpaceKHR GetCompatibleSurfaceColorSpace(VkPhysicalDevice gpu, VkSurfaceKH
 VkExtent2D GetCompatibleSurfaceExtent();
 
 
+void CopyBufferData(VkDevice device){}
+
 //create info helpers.
 //
 
@@ -51,6 +57,12 @@ VkDeviceQueueCreateInfo CreateDeviceQueueCI(uint32_t index, uint32_t count, floa
 //vulkan objects creation helpers.
 // 
 
+
+VkResult CreateImage2D(VkDevice device, VkImage* image, VkFormat format, VkExtent3D extent,
+                          VkImageUsageFlagBits usage, VkImageLayout layout);
+
+
+void DestroyImage(VkDevice device, VkImage* image);
 
 VkPipeline CreatePipeline(VkDevice device, PipelineState& pipeline);
 void DestroyPipeline(VkDevice device);
