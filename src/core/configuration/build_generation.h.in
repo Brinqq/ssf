@@ -1,0 +1,3 @@
+#pragma once
+
+constexpr const char* _SSF_GENERATED_SHADER_FOLDER = "@data_directory@";
