@@ -4,6 +4,8 @@ project(ssf)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_BINARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(data_directory ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
+
 file(MAKE_DIRECTORY ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
 
 set(root ${CMAKE_CURRENT_SOURCE_DIR})
@@ -17,8 +19,14 @@ set(files
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/ssf.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_core.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_helper.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_internal.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/MemoryVK/MemoryVK.cpp"
-  
+)
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/configuration/build_generation.h.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/configuration/build_generation.h"
+
 )
 
 
