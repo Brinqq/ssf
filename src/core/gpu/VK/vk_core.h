@@ -1,53 +1,86 @@
 #pragma once
 
 #include "vk_defines.h"
+
 #include <vector>
+#include <array>
+
 
 //tmp
 #include "gfx/prefabs.h"
 //---------
 
 struct Device;
+class VK;
+
 
 class VK{
-static constexpr uint64_t _StagingBufferSize = 1000000;
+private:
 
-static constexpr int _MacosDeviceLocalFlag = 0;
-static constexpr int _MacosHostAccessFlag = 1;
+  //static pipeline
 
-    VkInstance instance;
-    VkDevice device;
-    VkPhysicalDevice gpu;
+  struct Semaphore{
+   static constexpr int RenderReady = 0;
+   static constexpr int RenderDone = 1;
+   static constexpr int RenderSwap = 1;
 
-    VkSurfaceKHR surface;
-    VkSwapchainKHR swapchain;
-    VkImageView swapchainViews[2];
-    VkFramebuffer framebuffers[2];
-    VkRenderPass mainRenderpass;
+   static constexpr int Count = 3;
+  };
 
-    VkCommandPool graphicsPool;
-    VkCommandPool transferPool;
+  struct Fence{
+    static constexpr int FrameInFlight = 0;
+    static constexpr int Count = 1;
+  };
 
-    VkCommandBuffer mainCommandBuffer;
-    VkFence mainFence;
+  static constexpr uint64_t _stagingBufferSize = 1000000;
+  static constexpr int _macosDeviceLocalFlag = 0;
+  static constexpr int _macosHostAccessFlag = 1;
 
-    VkQueue graphicQueue;
-    VkQueue transferQueue;
+  VkInstance instance;
+  VkDevice device;
+  VkPhysicalDevice gpu;
 
-    std::vector<QueueFamily> queueFamilies;
-    std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[2];
+  VkSurfaceKHR surface;
+  VkSwapchainKHR swapchain;
+  VkExtent2D swapchainExtent;
 
-    struct{
-      const ssf::prefabs::StandardCube<uint16_t> data;
-      VkBuffer vbo;
-      VkDeviceMemory vHandle;
-      uint64_t vDataSize;
-      VkBuffer ibo;
-      VkDeviceMemory iHandle;
-      uint64_t iDataSize;
-      
+  uint8_t numBackbuffers = 2;
+  uint32_t curBackBuffer = 0;
+  VkImageView swapchainViews[2];
+  VkFramebuffer framebuffers[2];
+  std::array<VkSemaphore, 2> swapSemaphores;
 
-    }_TmpCube;
+  VkRenderPass mainRenderpass;
+  VkPipeline mainPipeline;
+
+  VkCommandPool graphicsPool;
+  VkCommandPool transferPool;
+
+  VkCommandBuffer mainCommandBuffer;
+  VkFence mainFence;
+
+  VkQueue graphicQueue;
+  VkQueue transferQueue;
+  std::vector<QueueFamily> queueFamilies;
+  std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[2];
+
+  std::array<VkSemaphore, Semaphore::Count> semaphores;
+  std::array<VkFence, Fence::Count> fences;
+
+  ivk::FeatureSet features;
+
+  struct{
+    const ssf::prefabs::StandardCube<uint16_t> data;
+    VkBuffer vbo;
+    VkDeviceMemory vHandle;
+    uint64_t vDataSize;
+    VkBuffer ibo;
+    VkDeviceMemory iHandle;
+    uint64_t iDataSize;
+  }_TmpCube;
+
+private:
+  void SwapBackBuffers();
 
 public:
   int Init();
