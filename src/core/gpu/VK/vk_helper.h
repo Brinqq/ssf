@@ -45,9 +45,6 @@ VkFormat GetCompatibleSurfaceFormat(VkPhysicalDevice gpu, VkSurfaceKHR surface);
 VkColorSpaceKHR GetCompatibleSurfaceColorSpace(VkPhysicalDevice gpu, VkSurfaceKHR surface);
 VkExtent2D GetCompatibleSurfaceExtent();
 
-
-void CopyBufferData(VkDevice device){}
-
 //create info helpers.
 //
 

@@ -56,6 +56,8 @@ VkExtent2D vkh::GetCompatibleSurfaceExtent(){
 //fixme end
 
 
+
+
 VkPhysicalDevice vkh::GetGpu(VkInstance& instance){
   //FIXME:(Crossplatform support) add gpu selection only selects first gpu at the moment.
 
@@ -77,10 +79,10 @@ void vkh::GenerateQueueFamilies(VkPhysicalDevice device, QueueFamily* const pDat
       pDat[i].index = i;
       pDat[i].maxQueues = pProperties[i].queueCount;
       pDat[i].bits = QueueBitNone;
-      if(pProperties->queueFlags | VK_QUEUE_GRAPHICS_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits | QueueBitGraphic);}
-      if(pProperties->queueFlags | VK_QUEUE_COMPUTE_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits  | QueueBitCompute);}
-      if(pProperties->queueFlags | VK_QUEUE_TRANSFER_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits | QueueBitTransfer);}
-      if(pProperties->queueFlags | VK_QUEUE_SPARSE_BINDING_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits | QueueBitSparse);}
+      if(pProperties->queueFlags & VK_QUEUE_GRAPHICS_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits | QueueBitGraphic);}
+      if(pProperties->queueFlags & VK_QUEUE_COMPUTE_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits  | QueueBitCompute);}
+      if(pProperties->queueFlags & VK_QUEUE_TRANSFER_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits | QueueBitTransfer);}
+      if(pProperties->queueFlags & VK_QUEUE_SPARSE_BINDING_BIT){ pDat[i].bits = static_cast<QueueBitTypes>(pDat[i].bits | QueueBitSparse);}
     }
 
     return;
@@ -238,12 +240,12 @@ VkRenderPass vkh::CreateRenderpass(VkDevice device){
 
   VkAttachmentDescription colorAttachment{};
   colorAttachment.flags = 0;
-  colorAttachment.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+  colorAttachment.format = VK_FORMAT_B8G8R8A8_UNORM;
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
   colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_NONE;
-  colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_NONE;
-  colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_NONE;
+  colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
   colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
@@ -263,6 +265,15 @@ VkRenderPass vkh::CreateRenderpass(VkDevice device){
   subpassDescription.pResolveAttachments = nullptr;
   subpassDescription.pDepthStencilAttachment = nullptr;
 
+  VkSubpassDependency dependency{};
+  dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dependency.dstSubpass = 0;
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+dependency.srcAccessMask = 0;
+dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+
   VkRenderPassCreateInfo cRenderpass{};
   cRenderpass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   cRenderpass.pNext = nullptr;
@@ -271,8 +282,8 @@ VkRenderPass vkh::CreateRenderpass(VkDevice device){
   cRenderpass.attachmentCount = 1;
   cRenderpass.subpassCount = 1;
   cRenderpass.pSubpasses = &subpassDescription;
-  cRenderpass.dependencyCount = 0;
-  cRenderpass.pDependencies = nullptr;
+  cRenderpass.dependencyCount = 1;
+  cRenderpass.pDependencies = &dependency;
 
   vkcall(vkCreateRenderPass(device, &cRenderpass, nullptr, &renderpass))
 
