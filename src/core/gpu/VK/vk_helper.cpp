@@ -322,30 +322,6 @@ void vkh::DestroyImageView(VkDevice device, VkImageView view){
 
 };
 
-VkResult vkh::CreateImage2D(VkDevice device, VkImage* image, VkFormat format, VkExtent3D extent,
-                          VkImageUsageFlagBits usage, VkImageLayout layout){
-  VkImageCreateInfo cImage{};
-  cImage.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  cImage.pNext = nullptr;
-  cImage.flags = 0;
-  cImage.imageType = VK_IMAGE_TYPE_2D;
-  cImage.format = format;
-  cImage.extent = extent;
-  cImage.arrayLayers = 1;
-  cImage.samples = VK_SAMPLE_COUNT_1_BIT;
-  cImage.tiling = VK_IMAGE_TILING_OPTIMAL;
-  cImage.usage = usage;
-  cImage.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  cImage.queueFamilyIndexCount = 0;
-  cImage.pQueueFamilyIndices = nullptr;
-  cImage.initialLayout = layout;
-
-  cImage.mipLevels = 0;
-
-  return vkCreateImage(device, nullptr, nullptr, image);
-
-};
-
 void DestroyImage(VkDevice device, VkImage* image){
   
 }
