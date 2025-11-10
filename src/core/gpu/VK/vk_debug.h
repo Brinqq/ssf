@@ -14,3 +14,6 @@ inline void VKResultError(int code, const char* file, int line){
 static int g_error;
 
 #define vkcall(_expr) g_error =  _expr; if(g_error != VK_SUCCESS){ VKResultError(g_error, __FILE__, __LINE__);}
+
+//notify if fence hits timeine
+#define fence_notify()
