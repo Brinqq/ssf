@@ -17,6 +17,45 @@ VkResult CreateFence(VkDevice device, VkFenceCreateFlags bit, VkAllocationCallba
   return vkCreateFence(device, &fence, pAllocator, pFence);
 }
 
+
+VkResult CreateSampler(VkDevice device, VkSamplerAddressMode mode, bool aniso, uint32_t ansioMax,
+                       uint32_t minLod, uint32_t maxLod, const VkAllocationCallbacks* allocator, VkSampler* pSampler){
+    VkSamplerCreateInfo cSampler;
+    cSampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    cSampler.pNext = nullptr;
+    cSampler.flags = 0;
+    cSampler.magFilter = VK_FILTER_LINEAR;
+    cSampler.minFilter = VK_FILTER_LINEAR;
+    cSampler.addressModeU = mode;
+    cSampler.addressModeV = mode;
+    cSampler.addressModeW = mode;
+    cSampler.compareEnable = VK_FALSE;
+    cSampler.compareOp = VK_COMPARE_OP_ALWAYS;
+    cSampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    cSampler.mipLodBias = 0;
+    cSampler.minLod = minLod;
+    cSampler.maxLod = maxLod;
+    cSampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    cSampler.unnormalizedCoordinates = VK_FALSE;
+
+    if(aniso){
+      cSampler.anisotropyEnable = VK_FALSE;
+      cSampler.maxAnisotropy = ansioMax;
+    }else{
+      cSampler.anisotropyEnable = VK_TRUE;
+      cSampler.maxAnisotropy = 0;
+    }
+
+    return vkCreateSampler(device, &cSampler, allocator, pSampler);
+}
+
+
+void DestroySamplers(VkDevice device, VkSampler* samplers, uint32_t count, const VkAllocationCallbacks* allocator){
+  for(int i = 0; i < count; ++i){
+    vkDestroySampler(device, samplers[i], allocator);
+  }
+}
+
 VkResult CreateImage2D(VkDevice device, VkFormat format, VkExtent3D extent, uint32_t mips,
                        VkImageUsageFlags usage, VkImageLayout layout, VkSampleCountFlagBits MSAA,
                        VkImageTiling VK_IMAGE_TILING_OPTIMAL, uint32_t layers, VkImage* pImage){
