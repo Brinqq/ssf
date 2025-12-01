@@ -4,26 +4,30 @@
 #include "gpu/VK/vk_core.h"
 #include "device.h"
 
-#include "gfx/gfx.h"
+#include "gk/gk.h"
 
 #include <cassert>
+
+bool gApplicationClose = true;
 
 namespace ssf{
 
 int Init(){
-  VK vk{};
-  Device device{};
+  //core systems
+  VK driver{};
+  driver.Init();
 
-  vk.Init();
-  CreateGraphicSystem(device, vk);
-  vk.TestTriangle();
+  //subsystems
+  GK graphics;
+  graphics.Init(driver);
 
-  while(device.IsGraphicWindowRunning()){
-    device.Tick();
-    vk.Draw();
+
+  while(!gApplicationClose){
+    graphics.Tick();
   };
 
 
+  graphics.Destroy();
   return 0;
 }
 
