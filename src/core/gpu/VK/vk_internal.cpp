@@ -7,8 +7,7 @@
 
 namespace ivk{
 
-VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, VkRenderPass renderpass,
-                              VkPipeline* pipeline){
+VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, VkRenderPass renderpass, VkPipeline* pipeline){
   //TODO: Shaders reflect and set layout requirements instead of hardcoding
   
   //shader stage
@@ -36,22 +35,33 @@ VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, 
   cVertexInputState.pNext = nullptr;
   cVertexInputState.flags = 0;
 
-  VkVertexInputBindingDescription vbd{};
+  VkVertexInputBindingDescription vbd;
   vbd.binding = 0;
-  vbd.stride = sizeof(float) * 3;
+  vbd.stride = sizeof(float) * 8;
   vbd.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
   cVertexInputState.vertexBindingDescriptionCount = 1;  
   cVertexInputState.pVertexBindingDescriptions = &vbd;
 
-  VkVertexInputAttributeDescription vad{};
-  vad.location = 0;
-  vad.binding = 0;
-  vad.format = VK_FORMAT_R32G32B32_SFLOAT;
-  vad.offset = 0;
+  VkVertexInputAttributeDescription vad[3];
+  vad[0].location = 0;
+  vad[0].binding = 0;
+  vad[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vad[0].offset = 0;
 
-  cVertexInputState.vertexAttributeDescriptionCount = 1;
-  cVertexInputState.pVertexAttributeDescriptions = &vad;
+  vad[1].location = 1;
+  vad[1].binding = 0;
+  vad[1].format = VK_FORMAT_R32G32_SFLOAT;
+  vad[1].offset = sizeof(float) * 3;
+
+  vad[2].location = 2;
+  vad[2].binding = 0;
+  vad[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+  vad[2].offset = sizeof(float) * 5;
+
+
+  cVertexInputState.vertexAttributeDescriptionCount = 3;
+  cVertexInputState.pVertexAttributeDescriptions = vad;
 
   //input stage
   VkPipelineInputAssemblyStateCreateInfo cInputAssemblyState{};
@@ -102,8 +112,8 @@ VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, 
   cRasterizationState.depthClampEnable = VK_FALSE;
   cRasterizationState.rasterizerDiscardEnable = VK_FALSE;
   cRasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-  cRasterizationState.cullMode = VK_CULL_MODE_NONE;
-  cRasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+  cRasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+  cRasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
   cRasterizationState.depthBiasEnable = VK_FALSE;
   //wtf is this 
   cRasterizationState.depthBiasConstantFactor = 0.0f;
@@ -120,7 +130,19 @@ VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, 
   cMultisampleState.sampleShadingEnable = VK_FALSE;
 
   VkPipelineDepthStencilStateCreateInfo cDepthStencilState{};
-    cDepthStencilState.depthTestEnable = VK_FALSE;
+  cDepthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  cDepthStencilState.pNext = nullptr;
+  cDepthStencilState.flags = 0;
+  cDepthStencilState.depthTestEnable = VK_TRUE;
+  cDepthStencilState.depthWriteEnable = VK_TRUE;
+  cDepthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+  cDepthStencilState.depthBoundsTestEnable = VK_FALSE;
+  cDepthStencilState.stencilTestEnable = VK_FALSE;
+  cDepthStencilState.minDepthBounds = 0.0f;
+  cDepthStencilState.maxDepthBounds = 1.0f;
+  cDepthStencilState.front = {};
+  cDepthStencilState.back = {};
+
 
   VkPipelineColorBlendAttachmentState colorBlendAttachment{};
   colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -143,20 +165,7 @@ VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, 
   colorBlending.blendConstants[2] = 0.0f; // Optional
   colorBlending.blendConstants[3] = 0.0f; // Optional
 
-
   VkPipelineTessellationStateCreateInfo cTessellationState{};
-
-  VkPipelineLayoutCreateInfo cPipelineLayout{};
-  VkPipelineLayout layout{};
-  cPipelineLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  cPipelineLayout.pNext = nullptr;
-  cPipelineLayout.flags = 0;
-  cPipelineLayout.setLayoutCount = 0;
-  cPipelineLayout.pSetLayouts = nullptr;
-  cPipelineLayout.pushConstantRangeCount = 0;
-  cPipelineLayout.pPushConstantRanges = nullptr;
-
-  vkCreatePipelineLayout(device, &cPipelineLayout, nullptr, &layout);
 
   VkGraphicsPipelineCreateInfo cGraphicsPipeline{};
   cGraphicsPipeline.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO; 
@@ -170,7 +179,7 @@ VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, 
   cGraphicsPipeline.pVertexInputState = &cVertexInputState;
   cGraphicsPipeline.pTessellationState = nullptr;
   cGraphicsPipeline.pInputAssemblyState = &cInputAssemblyState;
-  cGraphicsPipeline.layout = layout;
+  cGraphicsPipeline.layout = shaders.layout;
 
   //dynamic state some static others enabled with param flag
   cGraphicsPipeline.pViewportState = &cViewportState;
@@ -181,7 +190,7 @@ VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, 
 
   //static always enabled customized through flags
   cGraphicsPipeline.pRasterizationState = &cRasterizationState;
-  cGraphicsPipeline.pDepthStencilState = nullptr;
+  cGraphicsPipeline.pDepthStencilState = &cDepthStencilState;
   cGraphicsPipeline.pColorBlendState = &colorBlending;
 
   //user defined with parameters to create function

@@ -23,7 +23,6 @@ struct TransitionImageLayoutData{
   VkImageSubresourceRange range;
 };
 
-
 // Creation functions
 VkResult CreateGraphicPipeline(VkDevice device, const PipelineShaders& shaders, VkRenderPass renderpass, VkPipeline* pipeline);
 
