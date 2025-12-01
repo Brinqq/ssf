@@ -4,15 +4,19 @@ project(ssf)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_BINARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(data_directory ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
+
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
 
 set(root ${CMAKE_CURRENT_SOURCE_DIR})
 
+set(data_directory ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
+set(atexture_directory ${root}/data/textures/)
+
 set(files
   # systems
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/gfx/gfx.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/gk.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/actions.cpp"
 
   # core
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/device.cpp"
@@ -22,6 +26,7 @@ set(files
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_internal.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_wrappers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/MemoryVK/MemoryVK.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/fsystem/image.cpp"
 )
 
 configure_file(
@@ -42,8 +47,9 @@ set(lib_directories
 set(include_directories
   ${root}/include
   ${root}/src
+  ${root}/external
   ${root}/external/bcl/src/include
-  ${root}/external/bcl/src/include
+  ${root}/external/glm
 )
 
 
