@@ -249,9 +249,24 @@ VkRenderPass vkh::CreateRenderpass(VkDevice device){
   colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
   colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+  VkAttachmentDescription depthAttachment{};
+  depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+  depthAttachment.initialLayout =  VK_IMAGE_LAYOUT_UNDEFINED;
+  depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+  depthAttachment.loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  depthAttachment.format = VK_FORMAT_D32_SFLOAT;
+  depthAttachment.flags = 0;
+
   VkAttachmentReference colorRef{};
   colorRef.attachment = 0;
   colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  VkAttachmentReference depthRef{};
+  depthRef.attachment = 1;
+  depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
   VkSubpassDescription subpassDescription{};
   subpassDescription.flags = 0;
@@ -263,23 +278,26 @@ VkRenderPass vkh::CreateRenderpass(VkDevice device){
   subpassDescription.preserveAttachmentCount = 0;
   subpassDescription.pPreserveAttachments = nullptr;
   subpassDescription.pResolveAttachments = nullptr;
-  subpassDescription.pDepthStencilAttachment = nullptr;
+  subpassDescription.pDepthStencilAttachment = &depthRef;
 
   VkSubpassDependency dependency{};
   dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
   dependency.dstSubpass = 0;
-  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-dependency.srcAccessMask = 0;
-dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
+  dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+  dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+  dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+  dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+  VkAttachmentDescription attachments[2]{colorAttachment, depthAttachment};
 
   VkRenderPassCreateInfo cRenderpass{};
   cRenderpass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   cRenderpass.pNext = nullptr;
   cRenderpass.flags = 0;
-  cRenderpass.pAttachments = &colorAttachment;
-  cRenderpass.attachmentCount = 1;
+  cRenderpass.attachmentCount = 2;
+  cRenderpass.pAttachments = attachments;
   cRenderpass.subpassCount = 1;
   cRenderpass.pSubpasses = &subpassDescription;
   cRenderpass.dependencyCount = 1;
@@ -295,7 +313,7 @@ void vkh::DestroyRenderpass(VkDevice device){
 }
 
 
-VkImageView vkh::CreateImageView(VkDevice device, VkImage image, VkImageViewType dem, VkFormat format){
+VkImageView vkh::CreateImageView(VkDevice device, VkImage image, VkImageViewType dem, VkFormat format, VkImageAspectFlags aspect){
   VkImageView ret;
   VkImageViewCreateInfo cImageView{};
   cImageView.sType =  VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -308,7 +326,7 @@ VkImageView vkh::CreateImageView(VkDevice device, VkImage image, VkImageViewType
   cImageView.components.g = VK_COMPONENT_SWIZZLE_IDENTITY,
   cImageView.components.b = VK_COMPONENT_SWIZZLE_IDENTITY,
   cImageView.components.a = VK_COMPONENT_SWIZZLE_IDENTITY,
-  cImageView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  cImageView.subresourceRange.aspectMask = aspect;
   cImageView.subresourceRange.baseMipLevel = 0;
   cImageView.subresourceRange.levelCount = 1;
   cImageView.subresourceRange.baseArrayLayer = 0;

@@ -55,11 +55,6 @@ VkDeviceQueueCreateInfo CreateDeviceQueueCI(uint32_t index, uint32_t count, floa
 // 
 
 
-VkResult CreateImage2D(VkDevice device, VkImage* image, VkFormat format, VkExtent3D extent,
-                          VkImageUsageFlagBits usage, VkImageLayout layout);
-
-
-void DestroyImage(VkDevice device, VkImage* image);
 
 VkPipeline CreatePipeline(VkDevice device, PipelineState& pipeline);
 void DestroyPipeline(VkDevice device);
@@ -68,7 +63,7 @@ VkRenderPass CreateRenderpass(VkDevice device);
 void DestroyRenderpass(VkDevice device);
 
 
-VkImageView CreateImageView(VkDevice device, VkImage image, VkImageViewType dem, VkFormat format);
+VkImageView CreateImageView(VkDevice device, VkImage image, VkImageViewType dem, VkFormat format, VkImageAspectFlags aspect);
 void DestroyImageView(VkDevice device, VkImageView view);
 
 VkResult CreateBuffer(VkDevice device, VkBuffer* buf, size_t bytes, const VkBufferUsageFlags usage);
