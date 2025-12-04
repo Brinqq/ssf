@@ -44,6 +44,7 @@ ssf::ActionHandle right;
 ssf::ActionHandle back;
 ssf::ActionHandle up;
 ssf::ActionHandle down;
+ssf::ActionHandle anExit;
 
 void DevInitInput(){
   forward = ssf::CreateAction();
@@ -52,6 +53,7 @@ void DevInitInput(){
   back = ssf::CreateAction();
   up = ssf::CreateAction();
   down = ssf::CreateAction();
+  anExit = ssf::CreateAction();
 
   ssf::MapAction(forward, ssf::KeyCodeW);
   ssf::MapAction(right, ssf::KeyCodeD);
@@ -59,6 +61,7 @@ void DevInitInput(){
   ssf::MapAction(back, ssf::KeyCodeS);
   ssf::MapAction(up, ssf::KeyCodeSHIFT);
   ssf::MapAction(down, ssf::KeyCodeSPACE);
+  ssf::MapAction(anExit, ssf::KeyCodeESC);
 
 };
 
@@ -90,6 +93,10 @@ void DevUpdateInput(){
 
   if(ssf::CheckAction(down)){
    cam.view = glm::translate(cam.view, glm::vec3(0.0f, 1.0f * speed, 0.0f));
+  }
+
+  if(ssf::CheckAction(anExit)){
+    gApplicationClose = true;
   }
 
 
