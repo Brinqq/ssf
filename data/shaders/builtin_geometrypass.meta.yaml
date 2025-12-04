@@ -1,0 +1,57 @@
+---
+pipeline_name: Geometry_pass
+
+shaders:
+  - name: vertex_shader
+    file: object.vert.glsl
+    stage: VERTEX
+
+  - name: pixel_shader
+    file: object.pixel.glsl
+    stage: PIXEL
+
+vertex_attributes:
+  - location: 0
+    name: vertex
+    type: vec3
+
+  - location: 1
+    name: uv
+    type: vec2
+
+  - location: 2
+    name: normal
+    type: vec3
+
+attachments:
+  user_defined:
+    - name: col
+      format: R8G8B8A8_SRGB
+  depth:
+    enable: true
+    format: D32_SFLOAT
+
+descriptors:
+  - set: 0
+    bindings:
+      - binding: 0
+        type: COMBINED_IMAGE_SAMPLER
+        stage: PIXEL
+
+push_constants:
+  - uniform: push
+    stage: VERTEX
+    total_size: 192
+    data:
+      - name: model
+        type: mat4
+        offset: 0
+
+      - name: view
+        type: mat4
+        offset: 64
+
+      - name: projection
+        type: mat4
+        offset: 128
+...
