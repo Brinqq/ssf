@@ -43,6 +43,8 @@ def compile_shader(path: str, name: str, type_arg: str):
     return True
 
 for file in shader_folder.iterdir():
+    if file.__str__().__contains__("meta"):
+        continue;
     shader = file.name
     arr = shader.__str__().split(".")
 
