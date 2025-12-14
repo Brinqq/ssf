@@ -10,14 +10,13 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
 
 set(root ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(data_directory ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
+set(runtime_data ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data/)
 set(atexture_directory ${root}/data/textures/)
 
 set(files
   # systems
   "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/gk.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/actions.cpp"
-
   # core
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/device.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/ssf.cpp"
@@ -26,6 +25,7 @@ set(files
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_internal.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_wrappers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/MemoryVK/MemoryVK.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/shader/shader_core.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/fsystem/image.cpp"
 )
 
@@ -50,12 +50,14 @@ set(include_directories
   ${root}/external
   ${root}/external/bcl/src/include
   ${root}/external/glm
+  ${root}/external/yaml-cpp/include
 )
 
 
 # bcl
 set(CMAKE_BUILD_TYPE "Release")
 add_subdirectory(${root}/external/bcl/src)
+add_subdirectory(${root}/external/yaml-cpp)
 
 #vulkan 
 # TODO: unhardcode please.
@@ -79,9 +81,10 @@ set(CMAKE_CXX_FLAGS
 add_library(${PROJECT_NAME} ${files})
 target_include_directories(${PROJECT_NAME} PRIVATE ${include_directories})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE 
+target_link_libraries(${PROJECT_NAME} PUBLIC 
   /Users/brinq/.dev/librarys/VulkanSDK/1.4.328.1/macOS/lib/libvulkan.1.dylib
   ${CMAKE_BINARY_DIR}/lib/libglfw3.a
+  yaml-cpp
   ${macos_frameworks}
 )
 
