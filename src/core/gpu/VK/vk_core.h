@@ -7,13 +7,16 @@
 
 #include <list>
 
+#include <bcl/containers/vector.h>
+#include <bcl/containers/span.h>
+#include <bcl/containers/bucket.h>
+
 //tmp
 #include "gk/prefabs.h"
 #include "glm/glm.hpp"
 //---------
 
-//TODO: MAJOR, Right now we just duplicate texture and buffers we need to cache these resources
-//with xxHash and a LUT/Hashmap. 
+// with xxHash and a LUT/Hashmap. 
 // - add reference count to these so we know when to remove on deletion of said resource.
 // - include functions for getting the cached handle for a optinal optimization for the frontend,
 //   this eleminates having to rehash the gpu resource on every draw target creation.
@@ -21,21 +24,26 @@
 // - make sure to defer deletion of ref counted objects to a state where there are no in-flight frames.
 // - Thread safety?
 
-//TODO: MAJOR, Go through a support windows and add dynamic state information based on gpu characteristics.
+//TODO: MAJOR, Go through a support windows and add dynamic state information
+//based on gpu characteristics.
+
+//TODO: Figure out a better descriptor pool allocation/creation stratagey.
+
 
 struct Device;
+struct ShaderContainer;
 class VK;
 
-enum FixedPasses{
-  FixedPassGeometry = 0, // for now this is lighting is calculated and applied in this pass.
-  FixedPassMax = 1
+
+enum DescriptorPoolType{
+  DescriptorPoolTexture,
 };
 
-enum LightingType{
-  LightingTypePoint,
-  LightingTypeDirectional,
-  LightingTypeAmbient
+enum RenderPassCreateFlags{
+  RenderPassNone = 0x0,
+  RenderPassDepthBit = 0x1,
 };
+
 
 struct GeometryData{
   void* pVertex;
@@ -50,9 +58,8 @@ struct GeometryData{
   uint32_t numIndices;
 };
 
-struct LightData{
-  LightingType type;
-  float color[4];
+
+struct CubeMapData{
 };
 
 
@@ -79,6 +86,11 @@ private:
 
   };
 
+  struct RenderPass{
+    static constexpr int Geometry = 0;
+    static constexpr int Count = 1;
+  };
+
   enum GpuResourceType{
       GpuResourceBuffer,
       GpuResourceImage,
@@ -91,6 +103,11 @@ private:
     GpuReadMemoryShaderReady
   };
 
+  enum RenderAttachmentUsageType{
+    RenderAttachmentUsageWrite,
+    RenderAttachmentUsageRead,
+    RenderAttachmentUsagePreserve,
+  };
 
   enum RenderPipelineFlags{
     RenderPipelineDepthEnable = 0x0,
@@ -98,10 +115,51 @@ private:
   };
 
 
-  struct DrawView{
-    VkViewport viewport;
-    VkRect2D scissor;
-    float viewMatrices[12];
+  static constexpr int kMaxSubpasses = 4;
+  static constexpr int kMaxFrameQueue = 3;
+
+  struct Swapchain{
+    struct Data{
+      VkImageView view;
+      VkSemaphore Semaphore;
+    };
+
+    VkSwapchainKHR handle;
+    VkSurfaceKHR surface;
+    VkExtent2D extent;
+    uint8_t currentBuf;
+    uint8_t maxFrames;
+    VkFormat format;
+    bcl::small_vector<Swapchain::Data, 3> buf;
+  };
+
+  struct AttachmentMemoryRegistry{
+    VkImage image;
+    VkImageView view;
+    VkFormat format;
+    VkDeviceMemory memory;
+  };
+
+  struct RenderAttachment{
+    VkFormat format;
+    VkImageLayout gpuRefLayout;
+    VkImageLayout finalLayout;
+    RenderAttachmentUsageType usage[kMaxSubpasses];
+    int preserveDepth[kMaxSubpasses];
+  };
+
+  struct DrawState{
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+    VkDescriptorSetLayout* DSL;
+    bcl::small_vector<VkDescriptorSet*, 5> sets;
+    void* push;
+  };
+
+  struct RPassState{
+    VkRenderPass handle;
+    uint32_t numSubpasses;
+    VkFramebuffer* framebuffers[kMaxFrameQueue];
   };
 
   struct DepthBuffer{
@@ -110,7 +168,6 @@ private:
     VkDeviceMemory memory;
     VkFormat format;
   };
-
 
   struct GpuBuffer{
     VkBuffer handle;
@@ -144,7 +201,6 @@ private:
 
 
   // compile time state
-  
   static constexpr uint64_t _stagingBufferSize = 80000000;
   static constexpr int _macosDeviceLocalFlag = 0;
   static constexpr int _macosHostAccessFlag = 1;
@@ -158,10 +214,35 @@ private:
     };
 
   std::array<VkSampler, Sampler::Count> fiSamplers;
+  std::array<VkSemaphore, Semaphore::Count> semaphores;
+  std::array<VkFence, Fence::Count> fences;
+
+  std::list<VkDescriptorSetLayout> DSLS;
+
+  enum DescriptorResourceFlags{
+    Texture = 0x0,
+    Storage = 0x2,
+    Uniform = 0x4,
+  };
+
+  struct DescriptorPool{
+    VkDescriptorPool pool;
+    uint8_t maxSets;
+    uint8_t remainingSets;
+  };
+
+  std::list<VkDescriptorSet> GlobalDescriptors;
+  std::list<VkDescriptorSet> PipelineDescriptors;
+  std::list<VkDescriptorSet> ObjectDescriptors;
+  std::vector<DescriptorPool> textureDP;
 
   GeometryPassPush DefaultGPassStub{};
 
+
   //dyn state
+  std::unordered_map<VkFramebuffer, AttachmentMemoryRegistry> attachmentMemories;
+
+  bk::bucket<VkFramebuffer, 10> framebufferss;
   
   //TODO: these are so so bad replace with bcl::dense_table or bcl::pool when done verifying completeness.
   std::list<GpuBuffer> bufferList;
@@ -173,7 +254,6 @@ private:
     typedef std::list<GBufEntry>::iterator GeoHandle;
   private:
   
-  VkRenderPass renderpass[FixedPassMax];
   DepthBuffer depthBuffer;
 
   VkInstance instance;
@@ -206,12 +286,8 @@ private:
   VkQueue graphicQueue;
   VkQueue transferQueue;
 
-  DrawView view;
-
   std::vector<QueueFamily> queueFamilies;
   std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[2];
-  std::array<VkSemaphore, Semaphore::Count> semaphores;
-  std::array<VkFence, Fence::Count> fences;
 
   ivk::FeatureSet features;
 
@@ -239,8 +315,11 @@ private:
 
 private:
   //Dynamic state Initialization
-  VkPipeline CreateRenderPipeline(const RenderPipelineFlags flags);
+  
+  //TMP:
+  void tCreateDescriptorPools(DescriptorPoolType type, uint32_t count, DescriptorPool* pMemory);
 
+  
   //fixed State Initialization
   void CreateFixedSamplers(bool rebuild);
   void CreateFixedDescriptors();
@@ -251,10 +330,15 @@ private:
 
   void GpuUploadBufData(VkCommandBuffer cmdBuf, VkDeviceMemory stage, VkBuffer srcBuf, VkBuffer dstBuf, const void* const pData, size_t bytes);
   void GpuUploadImageData(VkCommandBuffer cmdBuf,VkExtent3D extent, VkDeviceMemory stage, VkBuffer srcBuf, VkImage dstBuf, const void* const pData);
+  int CreateRenderPass(const bk::span<RenderAttachment>& attachments, uint32_t numSubpasses, const RenderPassCreateFlags flags, VkRenderPass* pRenderpass);
 
   void DestroyGraphicPipeline();
-  
+
+  VkPipelineLayout CreatePipelineLayoutFromContainer(const ShaderContainer& container);
+
 public:
+
+  typedef int ResourceHandle;
 
   int Init();
   void Destroy();
@@ -264,6 +348,9 @@ public:
 
   GeoHandle CreateGeometry(const GeometryData& geo);
   void DestroyGeometry(GeoHandle& geometry);
+
+  ResourceHandle CreateCubeMap(const CubeMapData& data);
+  void DestroyCubeMap(ResourceHandle handle);
 
   void MapGeometryPassPushBuf(GeoHandle& handle, void* pData);
   void UnmapGeometryPassPushBuf(GeoHandle& handle);
