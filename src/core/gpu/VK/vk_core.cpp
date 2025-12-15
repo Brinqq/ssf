@@ -256,6 +256,9 @@ int VK::CreateGraphicsState(Device& applicationDevice){
   textureDP.resize(3);
   tCreateDescriptorPools(DescriptorPoolTexture, 3, textureDP.data());
 
+  CreateFixedSamplers(false);
+  CreateFixedDescriptors();
+
 
   // ------------------------------------------------------------------------------------
   //  for now we hardcode these because i just dont know how
@@ -295,6 +298,15 @@ int VK::CreateGraphicsState(Device& applicationDevice){
   vkcall(vkCreateDescriptorSetLayout(device, &geoLayoutInfo, nullptr, geoPassDescriptorLayout))
   vkcall(vkCreateDescriptorSetLayout(device, &geoLayoutInfo, nullptr, skyboxDescriptorLayout))
 
+  VkDescriptorSetAllocateInfo skyboxAlloc{};
+  skyboxAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  skyboxAlloc.pNext = nullptr;
+  skyboxAlloc.pSetLayouts = skyboxDescriptorLayout;
+  skyboxAlloc.descriptorPool = textureDP.at(0).pool;
+  skyboxAlloc.descriptorSetCount = 1;
+
+  vkcall(vkAllocateDescriptorSets(device, &skyboxAlloc, &skyboxDescriptorSet))
+
   vkcall(ivk::CreatePipelineLayoutFromContainer(device, geometryPassShader, bk::span(geoPassDescriptorLayout, 1), &geoPassPipelineLayout))
   vkcall(ivk::CreatePipelineLayoutFromContainer(device, skyBoxShader, bk::span(skyboxDescriptorLayout, 1), &skyboxPipelineLayout))
 
@@ -331,19 +343,32 @@ int VK::CreateGraphicsState(Device& applicationDevice){
 
   vkcall(vkAllocateCommandBuffers(device, &aCommandBuffer, &mainCommandBuffer))
 
-  vkcall(vkh::CreateBuffer(device, &stagingBuffers[0].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
-  vkcall(vkh::CreateBuffer(device, &stagingBuffers[1].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+  // vkcall(vkh::CreateBuffer(device, &stagingBuffers[1].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+  // vkcall(vkh::CreateBuffer(device, &stagingBuffers[2].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+  // vkcall(vkh::CreateBuffer(device, &stagingBuffers[3].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+  // vkcall(vkh::CreateBuffer(device, &stagingBuffers[4].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+  // vkcall(vkh::CreateBuffer(device, &stagingBuffers[5].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+  // vkcall(vkh::CreateBuffer(device, &stagingBuffers[6].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+
+
+  for(int i = 0; i < 7; ++i){
+    VkMemoryRequirements req{};
+    vkcall(vkh::CreateBuffer(device, &stagingBuffers[i].first, _stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT))
+    vkGetBufferMemoryRequirements(device, stagingBuffers[i].first, &req);
+    vkcall(MemoryVK::Allocate(device, &stagingBuffers[i].second, req.size, _macosHostAccessFlag))
+    vkcall(vkBindBufferMemory(device, stagingBuffers[i].first, stagingBuffers[i].second, 0))
+  }
 
   VkMemoryRequirements req{};
-  vkGetBufferMemoryRequirements(device, stagingBuffers[0].first, &req);
-
-  vkcall(MemoryVK::Allocate(device, &stagingBuffers[0].second, req.size, _macosHostAccessFlag))
-  vkcall(vkBindBufferMemory(device, stagingBuffers[0].first, stagingBuffers[0].second, 0))
-
-  vkGetBufferMemoryRequirements(device, stagingBuffers[1].first, &req);
-  vkcall(MemoryVK::Allocate(device, &stagingBuffers[1].second, req.size, _macosHostAccessFlag))
-  vkcall(vkBindBufferMemory(device, stagingBuffers[1].first, stagingBuffers[1].second, 0))
-
+  // vkGetBufferMemoryRequirements(device, stagingBuffers[0].first, &req);
+  //
+  // vkcall(MemoryVK::Allocate(device, &stagingBuffers[0].second, req.size, _macosHostAccessFlag))
+  // vkcall(vkBindBufferMemory(device, stagingBuffers[0].first, stagingBuffers[0].second, 0))
+  //
+  // vkGetBufferMemoryRequirements(device, stagingBuffers[1].first, &req);
+  // vkcall(MemoryVK::Allocate(device, &stagingBuffers[1].second, req.size, _macosHostAccessFlag))
+  // vkcall(vkBindBufferMemory(device, stagingBuffers[1].first, stagingBuffers[1].second, 0))
+  
   vkcall(vkAllocateCommandBuffers(device, &aCommandBuffer, &mainCommandBuffer))
 
   VkFenceCreateInfo cFence;
@@ -364,8 +389,6 @@ int VK::CreateGraphicsState(Device& applicationDevice){
     vkcall(ivk::wrappers::CreateFence(device, VK_FENCE_CREATE_SIGNALED_BIT, nullptr, &s))
   }
 
-  CreateFixedSamplers(false);
-  CreateFixedDescriptors();
 
   glm::mat4 x = glm::mat4(1);
   memcpy(DefaultGPassStub.transform, &x, sizeof(glm::mat4));
@@ -516,6 +539,10 @@ void VK::Draw(){
   }
 
   vkCmdBindPipeline(mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeline);
+
+    vkCmdBindDescriptorSets(mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+    skyboxPipelineLayout, 0, 1, &skyboxDescriptorSet, 0, nullptr);
+
   vkCmdDraw(mainCommandBuffer, 3, 1 ,0 ,0);
 
   vkCmdEndRenderPass(mainCommandBuffer);
@@ -546,6 +573,7 @@ void VK::Draw(){
     i.pImageIndices = &curBackBuffer;
     i.pResults = nullptr;
     vkQueuePresentKHR(graphicQueue, &i);
+    vkQueueWaitIdle(graphicQueue);
 };
 
 void VK::TestTriangle(){
@@ -749,7 +777,7 @@ void VK::TestTriangle(){
   }
 
   
-  void VK::GpuUploadImageData(VkCommandBuffer cmdBuf,VkExtent3D extent, VkDeviceMemory stage, VkBuffer srcBuf, VkImage dstBuf, 
+  void VK::GpuUploadImageData(VkCommandBuffer cmdBuf,VkExtent3D extent, VkBufferImageCopy& copy, VkDeviceMemory stage, VkBuffer srcBuf, VkImage dstBuf, 
   const void* const pData){
     void* mem;
     vkcall(vkMapMemory(device, stage, 0, VK_WHOLE_SIZE, 0, &mem))
@@ -767,7 +795,7 @@ void VK::TestTriangle(){
     c.imageSubresource.layerCount = 1;
     c.imageSubresource.mipLevel = 0;
 
-    vkCmdCopyBufferToImage(mainCommandBuffer, stagingBuffers[0].first, dstBuf, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &c);
+    vkCmdCopyBufferToImage(mainCommandBuffer, srcBuf, dstBuf, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
   }
 
   void VK::SetGpuImageBarriers(VkCommandBuffer cmdBuf, const VkImageMemoryBarrier* const pBarrier, uint32_t count, 
@@ -854,7 +882,18 @@ void VK::TestTriangle(){
 
     SetGpuImageBarriers(mainCommandBuffer, &transfer, 1, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-    GpuUploadImageData(mainCommandBuffer, VkExtent3D{geo.textureWidth, geo.textureHeight, 1}, stagingBuffers[0].second, 
+    VkBufferImageCopy c{};
+    c.bufferImageHeight = 0;
+    c.bufferOffset = 0;
+    c.bufferRowLength = 0;
+    c.imageOffset = {0,0,0};
+    c.imageExtent = VkExtent3D{geo.textureWidth, geo.textureHeight, 1};
+    c.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    c.imageSubresource.baseArrayLayer = 0;
+    c.imageSubresource.layerCount = 1;
+    c.imageSubresource.mipLevel = 0;
+
+    GpuUploadImageData(mainCommandBuffer, VkExtent3D{geo.textureWidth, geo.textureHeight, 1}, c, stagingBuffers[0].second, 
     stagingBuffers[0].first, tex, geo.texture);
 
     SetGpuImageBarriers(mainCommandBuffer, &shaderReady, 1, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
@@ -919,7 +958,26 @@ void VK::TestTriangle(){
 
 
   void VK::SetSkyBox(ResourceHandle cubemap){
-    
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = static_cast<GpuCubeMap*>(cubemap)->view;
+    imageInfo.sampler = fiSamplers[Sampler::ClampTexture];
+
+    VkWriteDescriptorSet s{};
+    s.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    s.pNext = 0;
+    s.dstSet = skyboxDescriptorSet;
+    s.dstBinding = 0;
+    s.dstArrayElement = 0;
+    s.descriptorCount = 1;
+    s.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    s.pImageInfo = &imageInfo;
+    s.pBufferInfo = nullptr;
+    s.pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(device, 1, &s, 0, nullptr);
+
   };
 
   void VK::tCreateDescriptorPools(DescriptorPoolType type, uint32_t count, DescriptorPool* pMemory){
@@ -975,14 +1033,53 @@ ResourceHandle VK::CreateCubeMap(uint32_t size){
   ImageResource* resource = &imageLUT.construct();
   GpuCubeMap* ret = static_cast<GpuCubeMap*>(resourceLUT.construct());
 
-  *resource = ImageResource{ image, memory, VkExtent3D{size, size, 1}};
+  *resource = ImageResource{ image, memory, VkExtent3D{size, size, 1}, sr};
   *ret  = GpuCubeMap{v, resource};
   return ret;
 }
 
-
   void VK::WriteCubeMap(ResourceHandle handle, const CubeMapWriteDescription& desc){
     
+    GpuCubeMap* h = static_cast<GpuCubeMap*>(handle);
+
+    auto transfer = ivk::wrappers::CreateImageMemoryBarrier(device, h->resource->image, 0, 0, VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
+                     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, h->resource->range);
+
+    auto shaderReady = ivk::wrappers::CreateImageMemoryBarrier(device, h->resource->image, 0, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, h->resource->range);
+
+    vkcall(ivk::wrappers::BeginCommandBuffer(mainCommandBuffer))
+
+    SetGpuImageBarriers(mainCommandBuffer, &transfer, 1, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+    VkBufferImageCopy c{};
+    c.bufferImageHeight = 0;
+    c.bufferOffset = 0;
+    c.bufferRowLength = 0;
+    c.imageOffset = {0,0,0};
+    c.imageExtent = h->resource->extent;
+    c.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    c.imageSubresource.layerCount = 1;
+    c.imageSubresource.mipLevel = 0;
+
+    for(int i = 0; i < 6; ++i){
+    c.imageSubresource.baseArrayLayer = i;
+      GpuUploadImageData(mainCommandBuffer, h->resource->extent, c, stagingBuffers[i].second, stagingBuffers[i].first, h->resource->image, desc.data[i]);
+    }
+
+    SetGpuImageBarriers(mainCommandBuffer, &shaderReady, 1, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+    vkcall(ivk::wrappers::EndCommandBuffer(mainCommandBuffer))
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = nullptr;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &mainCommandBuffer;
+
+    vkcall(vkQueueSubmit(graphicQueue, 1, &submitInfo, 0))
+    vkcall(vkQueueWaitIdle(graphicQueue))
+    vkcall(vkResetCommandBuffer(mainCommandBuffer, 0))
   }
 
   void VK::DestroyCubeMap(ResourceHandle handle){

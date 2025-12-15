@@ -57,9 +57,11 @@ struct GeometryData{
   uint32_t numIndices;
 };
 
-
+//index fdata-fsize, rdata-rsize.... nullptr is valid we just 
+//wont write that image layer.
 struct CubeMapWriteDescription{
-
+  void* data[6];
+  size_t bytes[6];
 };
 
 typedef void* ResourceHandle;
@@ -173,6 +175,7 @@ private:
     VkImage image;
     VkDeviceMemory memory;
     VkExtent3D extent;
+    VkImageSubresourceRange range;
   };
 
   struct DepthBuffer{
@@ -221,7 +224,7 @@ struct GpuCubeMap{
 
 
   // compile time state
-  static constexpr uint64_t _stagingBufferSize = 80000000;
+  static constexpr uint64_t _stagingBufferSize = 800000000;
   static constexpr int _macosDeviceLocalFlag = 0;
   static constexpr int _macosHostAccessFlag = 1;
 
@@ -309,7 +312,7 @@ struct GpuCubeMap{
   VkQueue transferQueue;
 
   std::vector<QueueFamily> queueFamilies;
-  std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[2];
+  std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[7];
 
   ivk::FeatureSet features;
 
@@ -319,6 +322,7 @@ struct GpuCubeMap{
   VkPipeline skyboxPipeline;
   VkPipelineLayout skyboxPipelineLayout;
   VkDescriptorSetLayout* skyboxDescriptorLayout;;
+  VkDescriptorSet skyboxDescriptorSet;
   bk::bucket<ResourceHandle, 10> resourceLUT;
   bk::bucket<ImageResource, 10> imageLUT;
   //tmp
@@ -361,7 +365,7 @@ private:
   void SetGpuImageBarriers(VkCommandBuffer cmdBuf, const VkImageMemoryBarrier* const pBarrier, uint32_t count, VkPipelineStageFlags src, VkPipelineStageFlags dst);
 
   void GpuUploadBufData(VkCommandBuffer cmdBuf, VkDeviceMemory stage, VkBuffer srcBuf, VkBuffer dstBuf, const void* const pData, size_t bytes);
-  void GpuUploadImageData(VkCommandBuffer cmdBuf,VkExtent3D extent, VkDeviceMemory stage, VkBuffer srcBuf, VkImage dstBuf, const void* const pData);
+  void GpuUploadImageData(VkCommandBuffer cmdBuf,VkExtent3D extent, VkBufferImageCopy& copy, VkDeviceMemory stage, VkBuffer srcBuf, VkImage dstBuf, const void* const pData);
   int CreateRenderPass(const bk::span<AttachmentDescription>& attachments, uint32_t numSubpasses, const RenderPassCreateFlags flags, VkRenderPass* pRenderpass);
 
   void DestroyGraphicPipeline();
