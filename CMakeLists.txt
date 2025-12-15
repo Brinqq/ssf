@@ -22,10 +22,10 @@ set(files
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/ssf.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_core.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_helper.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_internal.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vkinternal.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vk_wrappers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/MemoryVK/MemoryVK.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/shader/shader_core.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu/VK/vkshader.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/fsystem/image.cpp"
 )
 
