@@ -105,6 +105,7 @@ void DevUpdateInput(){
 }
 
 
+ResourceHandle skybox;
 
 int GK::Init(VK& vulkan){
   driver = &vulkan;
@@ -165,6 +166,7 @@ int GK::Init(VK& vulkan){
 
   ssf::core::UnloadImage(image);
   ssf::core::UnloadImage(pimage);
+  skybox =  driver->CreateCubeMap(1920);
 
   gApplicationClose = false;
   return 0;
@@ -182,9 +184,11 @@ void GK::Tick(){
     driver->Draw();
 
     DevUpdateInput();
+
 };
 
 void GK::Destroy(){
+  driver->DestroyCubeMap(skybox);
   // driver->Destroy();
   device.CloseGraphicWindow();
 }
