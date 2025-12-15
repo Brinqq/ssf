@@ -1,6 +1,8 @@
 #include "vkshader.h"
 #include "vkdefines.h"
+
 #include "core/drivers/VK/vk_debug.h"
+#include "core/global.h"
 #include "core/debug.h"
 
 #include "core/configuration/build_generation.h"
@@ -18,7 +20,7 @@ struct ShaderEntry{
 };
 
 
-#define YamlNodeOrError(_node) if(!_node.IsDefined()){ssf_runtime_error()};
+#define YamlNodeOrError(_node) if(!_node.IsDefined()){juye_runtime_error()};
 
 const char* kPixelShaderBinaryExt = ".pixel.shader";
 const char* kVertexShaderBinaryExt = ".vert.shader";
@@ -57,7 +59,7 @@ static VkShaderModule CompileShaderSource(VkDevice device, VkAllocationCallbacks
   stream.open(pFile, std::ios::ate | std::ios::binary);
 
   if(!stream.is_open()){
-    ssf_runtime_error();
+    juye_runtime_error();
   }
 
   size_t bytes = stream.tellg();
@@ -99,7 +101,7 @@ static int CompileMetaFile(VkDevice device, VkAllocationCallbacks* allocator, co
         name.append(kPixelShaderBinaryExt);
         break;
       default:
-        ssf_runtime_error();
+        juye_runtime_error();
     }
 
     std::string shaderOut(_SSF_GENERATED_SHADER_FOLDER);

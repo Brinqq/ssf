@@ -1,5 +1,5 @@
 #include "device.h"
-#include "core/debug.h"
+#include "core/global.h"
 
 #if __APPLE__
 #include "vulkan/vulkan.h"
@@ -27,14 +27,14 @@ void glfwKeyboardCallback(GLFWwindow* h, int key, int scan, int action, int mods
 
 int Device::CreateGraphicWindow(float width, float height, const char* name){
   if(glfwInit() == GLFW_FALSE){
-    ssf_runtime_error()
+    juye_runtime_error();
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GraphicsWindow = glfwCreateWindow(width, height, name, nullptr, nullptr);
 
   if(GraphicsWindow == nullptr){
-    ssf_runtime_error();
+    juye_runtime_error();
   }
 
   glfwGetWindowSize((GLFWwindow*)GraphicsWindow, &windowW, &windowH);

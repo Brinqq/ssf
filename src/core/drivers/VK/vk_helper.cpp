@@ -1,4 +1,5 @@
 #include "vk_helper.h"
+#include "core/global.h"
 #include "vk_debug.h"
 
 #include "core/debug.h"
@@ -17,7 +18,7 @@
 
   void vkh::GetPlatformExtensions(bcl::small_vector<const char*>& ext){
     if(!glfwInit()){
-      ssf_runtime_error();
+      juye_runtime_error();
     };
     uint32_t count;
    const char** ppExtensions = glfwGetRequiredInstanceExtensions(&count);
