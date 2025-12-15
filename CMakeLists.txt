@@ -5,7 +5,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_BINARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-
 file(MAKE_DIRECTORY ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data)
 
 set(root ${CMAKE_CURRENT_SOURCE_DIR})
@@ -13,10 +12,14 @@ set(root ${CMAKE_CURRENT_SOURCE_DIR})
 set(runtime_data ${CMAKE_BINARY_OUTPUT_DIRECTORY}/data/)
 set(atexture_directory ${root}/data/textures/)
 
+set(compile_samples TRUE)
+
 set(files
   # systems
   "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/gk.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/prefabs.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/gk/actions.cpp"
+
   # core
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/juye.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/device.cpp"
@@ -90,3 +93,16 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 target_link_directories(${PROJECT_NAME} PRIVATE 
   ${lib_directories}
 )
+
+
+if(compile_samples)
+  set (sample_include ${root}/include)
+  set (sample_out ${CMAKE_BINARY_OUTPUT_DIRECTORY}/samples)
+  set (sample_lib ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+
+  add_executable(HelloTriangle ${root}/samples/hellotriangle.cpp)
+  target_link_directories(HelloTriangle PRIVATE ${sample_lib})
+  target_include_directories(HelloTriangle PRIVATE ${sample_include})
+  target_link_directories(HelloTriangle PRIVATE ${sample_link})
+  set_target_properties(HelloTriangle PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${sample_out})
+endif()
