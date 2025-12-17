@@ -22,6 +22,7 @@ set(files
 
   # core
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/juye.cpp"
+
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/device.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vk_core.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vk_helper.cpp"
@@ -29,6 +30,8 @@ set(files
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vk_wrappers.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/MemoryVK/MemoryVK.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vkshader.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vkresource.cpp"
+
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/fsystem/image.cpp"
 )
 
