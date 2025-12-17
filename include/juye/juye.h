@@ -13,4 +13,4 @@ int Init(const SystemType sys);
 int Init();
 int SystemsCreate(const SystemType sys);
 
-}//namespace ssf
+}
