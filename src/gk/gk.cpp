@@ -1,5 +1,5 @@
 #include "gk.h"
-#include "juye/prefabs.h"
+#include "juye/gk/prefabs.h"
 #include "core/global.h"
 
 #include "core/drivers/device.h"
@@ -38,7 +38,7 @@ struct Mesh{
 Mesh simpleCube;
 Mesh plane;
 
-Camera cam;
+Camera cam{};
 bool updateCam = false;
 float speed = 0.04;
 
@@ -145,7 +145,7 @@ int GK::Init(VK& vulkan){
   DevInitInput();
 
   cam.view = glm::lookAt(glm::vec3(0.0f, -4.0f, -4.0f), glm::vec3(0.0f, 1.0f, 4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-  cam.projection = glm::perspectiveFov(glm::radians(60.0f), static_cast<float>(device.windowW), static_cast<float>(device.windowH), 0.1f, 100.0f);
+  cam.projection = glm::perspectiveFov(glm::radians(60.0f), static_cast<float>(device.windowW), static_cast<float>(device.windowH), 0.1f, 1000.0f);
 
   simpleCube.push[0] = glm::mat4(1);
   simpleCube.push[1] = cam.view;
@@ -156,7 +156,6 @@ int GK::Init(VK& vulkan){
   plane.push[2] = cam.projection;
 
   simpleCube.push[0] = glm::translate(simpleCube.push[0], glm::vec3(0.0f, -0.7f, 2.0f));
-  // plane.push[0] = glm::translate(plane.push[0], glm::vec3(0.0f, -0.2f, 0.0f));
   plane.push[0] = glm::scale(plane.push[0], glm::vec3(20.0f, 0.0f, 20.0f));
 
 
@@ -224,7 +223,10 @@ void GK::Tick(){
       return;
     }
 
+    driver->WriteFrustum(reinterpret_cast<float*>(&cam));
+
     device.Tick();
+    
     driver->AddToDrawList(simpleCube.handle);
     driver->AddToDrawList(plane.handle);
     driver->Draw();
