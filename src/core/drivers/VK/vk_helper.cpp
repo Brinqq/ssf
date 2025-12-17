@@ -357,10 +357,11 @@ VkResult vkh::CreateBuffer(VkDevice device, VkBuffer* buf, size_t bytes, const V
     cBuffer.queueFamilyIndexCount = 0 ;
     cBuffer.pQueueFamilyIndices = nullptr;
     return vkCreateBuffer(device, &cBuffer, nullptr, buf);
-
 }
 
 
 void vkh::DestroyBuffer(VkDevice device, VkBuffer buffer){
   vkDestroyBuffer(device, buffer, nullptr);
 }
+
+
