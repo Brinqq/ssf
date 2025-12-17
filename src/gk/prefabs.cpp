@@ -1,4 +1,4 @@
-#include "juye/prefabs.h"
+#include "juye/gk/prefabs.h"
 
 using namespace juye;
 
@@ -91,4 +91,7 @@ Prefab::Builder& Prefab::Builder::SetMesh(const Prefab::BuiltinMeshType type) no
   
   return *this;
 }
+
+
+Prefab::Builder& Prefab::Builder::SetTexture(const BuiltinTextureType type) noexcept{}
 
