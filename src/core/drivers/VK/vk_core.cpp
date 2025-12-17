@@ -6,6 +6,7 @@
 #include "vk_wrappers.h"
 #include "MemoryVK/MemoryVK.h"
 #include "vkshader.h"
+#include "vkresource.h"
 
 #include "core/configuration//build_generation.h"
 #include "core/drivers/device.h"
@@ -24,6 +25,8 @@
 
 
 //opaque structure implementations
+
+using namespace juye::driver;
 
 int VK::CreateComputeState(){
   return 0;
@@ -253,8 +256,8 @@ int VK::CreateGraphicsState(Device& applicationDevice){
    vkcall(vkCreateFramebuffer(device, &cFramebuffer1, nullptr, &framebuffers[0]))
    vkcall(vkCreateFramebuffer(device, &cFramebuffer2, nullptr, &framebuffers[1]))
   
-  textureDP.resize(3);
-  tCreateDescriptorPools(DescriptorPoolTexture, 3, textureDP.data());
+  globalPool.resize(3);
+  tCreateDescriptorPools(DescriptorPoolTexture, 3, globalPool.data());
 
   CreateFixedSamplers(false);
   CreateFixedDescriptors();
@@ -264,27 +267,26 @@ int VK::CreateGraphicsState(Device& applicationDevice){
   //  for now we hardcode these because i just dont know how
   //  handle these for now
   // ------------------------------------------------------------------------------------
-  VkDescriptorSetLayoutBinding geoBindings{};
-  geoBindings.binding = 0;
-  geoBindings.descriptorCount = 1;
-  geoBindings.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  geoBindings.pImmutableSamplers = nullptr;
-  geoBindings.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-  VkDescriptorSetLayoutCreateInfo geoLayoutInfo{};
-  geoLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  geoLayoutInfo.bindingCount = 1;
-  geoLayoutInfo.pBindings = &geoBindings;
 
-  VkDescriptorSetLayoutBinding skyboxBindings{};
-  skyboxBindings.binding = 0;
-  skyboxBindings.descriptorCount = 1;
-  skyboxBindings.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-  skyboxBindings.pImmutableSamplers = nullptr;
-  skyboxBindings.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-  VkDescriptorSetLayoutCreateInfo nskyboxLayoutInfo{};
-  nskyboxLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  nskyboxLayoutInfo.bindingCount = 1;
-  nskyboxLayoutInfo.pBindings = &skyboxBindings;
+  skyboxDescriptorLayout  = &descriptorSetLayoutLut.construct();
+  geoPassDescriptorLayout = &descriptorSetLayoutLut.construct();
+  frustumDescriptorLayout = &descriptorSetLayoutLut.construct();
+
+  *geoPassDescriptorLayout = DescriptorSetLayoutBuilder()
+            .AddBinding(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .Build(device, nullptr);
+
+  *skyboxDescriptorLayout = DescriptorSetLayoutBuilder()
+            .AddBinding(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .Build(device, nullptr);
+
+  *frustumDescriptorLayout = DescriptorSetLayoutBuilder()
+            .AddBinding(0, 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+            .Build(device, nullptr);
+    
+
+  vkcall(AllocateVkDescriptorSets(device, globalPool.at(0).pool, skyboxDescriptorLayout, 1, &skyboxDescriptorSet))
+  vkcall(AllocateVkDescriptorSets(device, globalPool.at(0).pool, frustumDescriptorLayout, 1, &frustumDescriptorSet))
 
   const char* kGeometryPipelineMetaPath = "/Users/brinq/.dev/projects/solar-sim/juye/data/shaders/builtin_geometrypass.meta.yaml";
   const char* kSkyboxPipelineMetaPath = "/Users/brinq/.dev/projects/solar-sim/juye/data/shaders/builtin_skybox.meta.yaml";
@@ -292,29 +294,40 @@ int VK::CreateGraphicsState(Device& applicationDevice){
   ShaderContainer geometryPassShader =  BuildShaderFromMetaFile(device, nullptr, kGeometryPipelineMetaPath);
   ShaderContainer skyBoxShader =  BuildShaderFromMetaFile(device, nullptr, kSkyboxPipelineMetaPath);
 
-  geoPassDescriptorLayout = &descriptorSetLayoutLut.construct();
-  skyboxDescriptorLayout = &descriptorSetLayoutLut.construct();
+  VkDescriptorSetLayout geom[2] = {*geoPassDescriptorLayout, *frustumDescriptorLayout};
+  VkDescriptorSetLayout skyy[2] = {*skyboxDescriptorLayout, *frustumDescriptorLayout};
 
-  vkcall(vkCreateDescriptorSetLayout(device, &geoLayoutInfo, nullptr, geoPassDescriptorLayout))
-  vkcall(vkCreateDescriptorSetLayout(device, &geoLayoutInfo, nullptr, skyboxDescriptorLayout))
-
-  VkDescriptorSetAllocateInfo skyboxAlloc{};
-  skyboxAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  skyboxAlloc.pNext = nullptr;
-  skyboxAlloc.pSetLayouts = skyboxDescriptorLayout;
-  skyboxAlloc.descriptorPool = textureDP.at(0).pool;
-  skyboxAlloc.descriptorSetCount = 1;
-
-  vkcall(vkAllocateDescriptorSets(device, &skyboxAlloc, &skyboxDescriptorSet))
-
-  vkcall(ivk::CreatePipelineLayoutFromContainer(device, geometryPassShader, bk::span(geoPassDescriptorLayout, 1), &geoPassPipelineLayout))
-  vkcall(ivk::CreatePipelineLayoutFromContainer(device, skyBoxShader, bk::span(skyboxDescriptorLayout, 1), &skyboxPipelineLayout))
+  vkcall(ivk::CreatePipelineLayoutFromContainer(device, geometryPassShader, bk::span(geom, 2), &geoPassPipelineLayout))
+  vkcall(ivk::CreatePipelineLayoutFromContainer(device, skyBoxShader, bk::span(skyy, 2), &skyboxPipelineLayout))
 
   vkcall(ivk::CreateGraphicPipeline(device, geometryPassShader, geoPassPipelineLayout, mainRenderpass, &mainPipeline))
   vkcall(ivk::CreateGraphicPipeline(device, skyBoxShader, skyboxPipelineLayout, mainRenderpass, &skyboxPipeline))
 
   ShaderFreeContainer(device, nullptr, &geometryPassShader);
   ShaderFreeContainer(device, nullptr, &skyBoxShader);
+
+  //write to Allcate frustum buffer and write descrptor set
+  VkMemoryRequirements pvreq{};
+  vkcall(CreateVkBuffer(device, &projectionViewBuffer, kProjectionMatrixSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT))
+  vkGetBufferMemoryRequirements(device, projectionViewBuffer, &pvreq);
+  MemoryVK::Allocate(device, &projectionViewMemory, pvreq.size, _macosDeviceLocalFlag);
+  vkBindBufferMemory(device, projectionViewBuffer, projectionViewMemory, 0);
+
+  VkDescriptorBufferInfo DescriptorBufferInfo{};
+  DescriptorBufferInfo.buffer = projectionViewBuffer;
+  DescriptorBufferInfo.offset = 0;
+  DescriptorBufferInfo.range = kProjectionMatrixSize;
+
+  VkWriteDescriptorSet frustumWrite{};
+  frustumWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  frustumWrite.descriptorCount = 1;
+  frustumWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  frustumWrite.dstArrayElement = 0;
+  frustumWrite.dstSet = frustumDescriptorSet;
+  frustumWrite.dstBinding = 0;
+  frustumWrite.pBufferInfo = &DescriptorBufferInfo;
+  vkUpdateDescriptorSets(device, 1,&frustumWrite, 0,nullptr);
+
   // ------------------------------------------------------------------------------------
   // ------------------------------------------------------------------------------------
 
@@ -522,26 +535,28 @@ void VK::Draw(){
   vkCmdSetScissor(mainCommandBuffer, 0, 1, &scissor);
 
   //draw list execute
-  for(const GBufEntry& e: drawList){
 
+  VkDescriptorSet geometryDescBundle[2] = {VK_NULL_HANDLE, frustumDescriptorSet};
+  for(const GBufEntry& e: drawList){
+    geometryDescBundle[0] = e.texture->descriptor;
 
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(mainCommandBuffer, 0, 1, &e.vertex->handle, offsets);
     vkCmdBindIndexBuffer(mainCommandBuffer, e.index->handle, 0, VK_INDEX_TYPE_UINT16);
 
     vkCmdBindDescriptorSets(mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-    geoPassPipelineLayout, 0, 1, &e.texture->descriptor, 0, nullptr);
+    geoPassPipelineLayout, 0, 2, geometryDescBundle, 0, nullptr);
     
 
-
-    vkCmdPushConstants(mainCommandBuffer, geoPassPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GeometryPassPush), e.push);
+    vkCmdPushConstants(mainCommandBuffer, geoPassPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, 196, e.push);
     vkCmdDrawIndexed(mainCommandBuffer, e.numIndices, 1 ,0 ,0, 0);
   }
 
   vkCmdBindPipeline(mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeline);
 
+    VkDescriptorSet skyboxDescBundle[2] = {skyboxDescriptorSet, frustumDescriptorSet};
     vkCmdBindDescriptorSets(mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-    skyboxPipelineLayout, 0, 1, &skyboxDescriptorSet, 0, nullptr);
+    skyboxPipelineLayout, 0, 2, skyboxDescBundle, 0, nullptr);
 
   vkCmdDraw(mainCommandBuffer, 3, 1 ,0 ,0);
 
@@ -767,7 +782,7 @@ void VK::TestTriangle(){
 
     VkDescriptorSetAllocateInfo dsai{};
     dsai.pSetLayouts = geoPassDescriptorLayout;
-    dsai.descriptorPool = textureDP[0].pool;
+    dsai.descriptorPool = globalPool[0].pool;
     dsai.descriptorSetCount = 1;
     dsai.pNext = nullptr;
     dsai.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -789,11 +804,11 @@ void VK::TestTriangle(){
     s.pImageInfo = &imageInfo;
     s.pBufferInfo = nullptr;
     s.pTexelBufferView = nullptr;
+
     vkUpdateDescriptorSets(device, 1, &s, 0, nullptr);
 
     entry.texture->descriptor = texelSet;
     entry.push = &DefaultGPassStub;
-
 
     entry.numIndices = geo.numIndices;
     geometryList.push_back(entry);
@@ -839,7 +854,6 @@ void VK::TestTriangle(){
     s.pTexelBufferView = nullptr;
 
     vkUpdateDescriptorSets(device, 1, &s, 0, nullptr);
-
   };
 
   void VK::tCreateDescriptorPools(DescriptorPoolType type, uint32_t count, DescriptorPool* pMemory){
@@ -857,8 +871,15 @@ void VK::TestTriangle(){
         VkDescriptorPoolSize cs{};
         cs.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         cs.descriptorCount = kMaxTextureDescriptorCount;
-        cDescriptorPool.pPoolSizes = &cs;
-        cDescriptorPool.poolSizeCount = 1;
+
+
+        VkDescriptorPoolSize ub{};
+        ub.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        ub.descriptorCount = kMaxTextureDescriptorCount;
+
+        VkDescriptorPoolSize x[2] = {cs, ub};
+        cDescriptorPool.pPoolSizes = x;
+        cDescriptorPool.poolSizeCount = 2;
         break;
     }
 
@@ -944,12 +965,29 @@ ResourceHandle VK::CreateCubeMap(uint32_t size){
     vkcall(vkResetCommandBuffer(mainCommandBuffer, 0))
   }
 
-  void VK::DestroyCubeMap(ResourceHandle handle){
-    GpuCubeMap* h = static_cast<GpuCubeMap*>(handle);
-    vkDestroyImage(device, h->resource->image, nullptr);
-    vkDestroyImageView(device, h->view, nullptr);
-    MemoryVK::Deallocate(device, h->resource->memory, nullptr);
-  }
+void VK::DestroyCubeMap(ResourceHandle handle){
+  GpuCubeMap* h = static_cast<GpuCubeMap*>(handle);
+  vkDestroyImage(device, h->resource->image, nullptr);
+  vkDestroyImageView(device, h->view, nullptr);
+  MemoryVK::Deallocate(device, h->resource->memory, nullptr);
+}
+
+void VK::WriteFrustum(float* vp){
+  void* pMem;
+  vkcall(ivk::wrappers::BeginCommandBuffer(mainCommandBuffer))
+  GpuUploadBufData(mainCommandBuffer, stagingBuffers[0].second, stagingBuffers[0].first, projectionViewBuffer, vp, kProjectionMatrixSize);
+
+  VkSubmitInfo submit{};
+  submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &mainCommandBuffer;
+
+vkcall(ivk::wrappers::EndCommandBuffer(mainCommandBuffer))
+  vkQueueSubmit(graphicQueue, 1, &submit, VK_NULL_HANDLE);
+  vkQueueWaitIdle(graphicQueue);
+  
+  vkResetCommandBuffer(mainCommandBuffer, 0);
+};
 
 
 void VK::Destroy(){

@@ -27,7 +27,6 @@
 
 //TODO: Figure out a better descriptor pool allocation/creation stratagey.
 
-
 struct Device;
 struct ShaderContainer;
 class VK;
@@ -67,7 +66,6 @@ typedef void* ResourceHandle;
 
 class VK{
 private:
-
   //static pipeline
 
   struct Semaphore{
@@ -227,7 +225,6 @@ struct GpuCubeMap{
   static constexpr int _macosDeviceLocalFlag = 0;
   static constexpr int _macosHostAccessFlag = 1;
 
-  // fixed state
     const VkComponentMapping defaultTextureCMapping{ 
       VK_COMPONENT_SWIZZLE_R,
       VK_COMPONENT_SWIZZLE_G,
@@ -235,9 +232,12 @@ struct GpuCubeMap{
       VK_COMPONENT_SWIZZLE_A
     };
 
+
+  //Builtin state
   std::array<VkSampler, Sampler::Count> fiSamplers;
   std::array<VkSemaphore, Semaphore::Count> semaphores;
   std::array<VkFence, Fence::Count> fences;
+  std::array<VkBuffer, juye::driver::BuiltinUniformCount> BuiltinUniforms;
 
 
   bk::bucket<VkDescriptorSetLayout, 3> descriptorSetLayoutLut;
@@ -258,7 +258,8 @@ struct GpuCubeMap{
   std::list<VkDescriptorSet> GlobalDescriptors;
   std::list<VkDescriptorSet> PipelineDescriptors;
   std::list<VkDescriptorSet> ObjectDescriptors;
-  std::vector<DescriptorPool> textureDP;
+
+  std::vector<DescriptorPool> globalPool;
 
   GeometryPassPush DefaultGPassStub{};
 
@@ -295,9 +296,7 @@ struct GpuCubeMap{
   std::array<VkSemaphore, 2> swapSemaphores;
 
   VkRenderPass mainRenderpass;
-  VkPipeline mainPipeline;
   VkDescriptorPool geoPassDescriptorPool;
-
 
   std::array<VkDescriptorSet, 2> textureDescSet;
 
@@ -313,18 +312,36 @@ struct GpuCubeMap{
   std::vector<QueueFamily> queueFamilies;
   std::pair<VkBuffer, VkDeviceMemory> stagingBuffers[7];
 
-  ivk::FeatureSet features;
-
-  //tmp
+  //NOTE: All this is super tmp, for now we basically thow everything i dont
+  // know how to structure in here and hope we figure it out when the system makes more sense.
+  //------------------------------------------------------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------------------------------------------------------
+  
+  //geometry pass stuff
+  VkPipeline mainPipeline;
   VkPipelineLayout geoPassPipelineLayout;
   VkDescriptorSetLayout* geoPassDescriptorLayout;
+
+  // skybox pass stuff
   VkPipeline skyboxPipeline;
   VkPipelineLayout skyboxPipelineLayout;
   VkDescriptorSetLayout* skyboxDescriptorLayout;;
   VkDescriptorSet skyboxDescriptorSet;
+
+  //uniform: projection-view matrix
+  juye::driver::DrawFrustum frustum;
+  VkDescriptorSetLayout* frustumDescriptorLayout;
+  VkDescriptorSet frustumDescriptorSet;
+  VkBuffer projectionViewBuffer;
+  VkDeviceMemory projectionViewMemory;
+  VkDescriptorSet projectionViewSet;
+  const int kProjectionMatrixSize = 128;
+
+  
   bk::bucket<ResourceHandle, 10> resourceLUT;
   bk::bucket<ImageResource, 10> imageLUT;
-  //tmp
+  //------------------------------------------------------------------------------------------------------------------------------
+  //------------------------------------------------------------------------------------------------------------------------------
 
 private:
   //Dynamic state Initialization
@@ -377,5 +394,6 @@ public:
 
   void Draw();
   void TestTriangle();
+  void WriteFrustum(float* vp);
 
 };//class VK
