@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vulkan/vulkan.h"
+#include "vk_debug.h"
 
 enum QueueBitTypes{
   QueueBitNone = 0x0,
@@ -25,19 +26,17 @@ struct QueueFamily{
   QueueBitTypes bits;
 };
 
+namespace juye::driver{
 
-namespace ivk{
+  enum BuiltinUniformType{
+    BuiltinUniformCamera,
+    BuiltinUniformCount
+  };
 
-constexpr VkFormat _supportedFormats = {
-  
-};
-
-class RequiredFeatures{
-
-};
-
-class FeatureSet : public RequiredFeatures{
-    bool validation = false;   
+  struct DrawFrustum{
+    float view[4]; //should this be in here? probably not, who knows.
+    float projection[4];
   };
 
 }
+

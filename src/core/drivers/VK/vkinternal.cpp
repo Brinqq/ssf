@@ -228,3 +228,22 @@ std::pair<void*, size_t> CompileShaderSource(const char* path){
 }
 
 }
+
+namespace juye::driver{
+
+VkResult CreateVkBuffer(VkDevice device, VkBuffer* pBuf, size_t bytes, const VkBufferUsageFlags usage){
+  VkBufferCreateInfo cBuffer{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, nullptr, 0, bytes, usage, VK_SHARING_MODE_EXCLUSIVE, 0, nullptr, };
+  return vkCreateBuffer(device, &cBuffer, nullptr, pBuf);
+}
+
+void DestoryVkBuffers(VkDevice device, VkBuffer* pBufs, uint32_t count, VkAllocationCallbacks* pAllocator){
+  for(int i = 0; i < count; ++i){
+    vkDestroyBuffer(device, pBufs[i], pAllocator);
+  }
+}
+
+
+
+
+}
+
