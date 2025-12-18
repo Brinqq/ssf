@@ -4,7 +4,23 @@ layout(location = 0) in vec2 uv;
 layout(location = 1) in vec3 normal;
 
 layout(binding = 0) uniform sampler2D tex;
+
+struct Light{
+  vec3 col;
+  vec3 pos;
+};
+
+layout(set = 0, binding = 1) readonly buffer ambient{
+  Light data[];
+}al;
+
+
+layout(set = 0, binding = 2) readonly buffer directional{
+  Light data[];
+}dl;
+
 layout(location = 0) out vec4 col; //actual pixel color we present
+
 
 
 struct Directional_light{
