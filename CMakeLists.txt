@@ -31,6 +31,7 @@ set(files
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/MemoryVK/MemoryVK.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vkshader.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/vkresource.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/core/drivers/VK/tmp.cpp"
 
   "${CMAKE_CURRENT_SOURCE_DIR}/src/core/fsystem/image.cpp"
 )
