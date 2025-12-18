@@ -51,6 +51,6 @@ descriptors:
 push-constants:
   - uniform: model
     stage: VERTEX
-    size: 192
+    size: 196
     offset: 0
 ...
