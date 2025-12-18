@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vkdefines.h"
+#include "vkentry.h"
 
 #include <vector>
 #include <array>
@@ -275,6 +276,9 @@ struct GpuCubeMap{
   std::list<GBufEntry> geometryList;
   std::vector<GBufEntry> drawList;
 
+  //entries
+  juye::driver::LightEntryListBundle lightBundle;
+
   public:
     typedef std::list<GBufEntry>::iterator GeoHandle;
   private:
@@ -380,6 +384,11 @@ public:
   void WriteCubeMap(ResourceHandle handle, const CubeMapWriteDescription& desc);
   void DestroyCubeMap(ResourceHandle handle);
 
+  ResourceHandle CreateLightSource(const juye::Color3& col, const juye::Vector3f& pos, 
+                const juye::driver::LightEntryType type);
+
+  void WriteLightSource(ResourceHandle h);
+  void DestroyLightSources(ResourceHandle* h, int count);
 
   void MapGeometryPassPushBuf(GeoHandle& handle, void* pData);
   void UnmapGeometryPassPushBuf(GeoHandle& handle);

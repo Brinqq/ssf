@@ -7,6 +7,7 @@
 #include "MemoryVK/MemoryVK.h"
 #include "vkshader.h"
 #include "vkresource.h"
+#include "vkentry.h"
 
 #include "core/configuration//build_generation.h"
 #include "core/drivers/device.h"
@@ -988,6 +989,37 @@ vkcall(ivk::wrappers::EndCommandBuffer(mainCommandBuffer))
   
   vkResetCommandBuffer(mainCommandBuffer, 0);
 };
+
+
+  ResourceHandle VK::CreateLightSource(const juye::Color3& col, const juye::Vector3f& pos, 
+                const juye::driver::LightEntryType type){
+
+  LightEntry entry{};
+  ResourceHandle ret;
+  entry.color = col;
+  entry.position = pos;
+
+  switch (type){
+  case LightEntryAmbient:
+    lightBundle.ambient.push_back(entry);
+    ret = &lightBundle.ambient.back();
+    break;
+  case LightEntryDirectional:
+    lightBundle.directional.push_back(entry);
+    ret = &lightBundle.directional.back();
+    break;
+  }
+
+  return nullptr;
+}
+
+void WriteLightSource(ResourceHandle h){
+
+}
+
+void DestroyLightSources(ResourceHandle* h, int count){
+
+}
 
 
 void VK::Destroy(){
