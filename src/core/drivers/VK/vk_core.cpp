@@ -227,45 +227,38 @@ int VK::CreateGraphicsState(Device& applicationDevice){
     {RenderAttachmentUsageWrite},
   };
 
-  CreateRenderPass(bk::span(&f, 1), 1, RenderPassDepthBit, &mainRenderpass);
-
-  VkImageView frontrp[2]{swapchainViews[0], depthBuffer.view};
-  VkImageView backrp[2]{swapchainViews[1], depthBuffer.view};
-
-   VkFramebufferCreateInfo cFramebuffer1{};
-   cFramebuffer1.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-   cFramebuffer1.pNext = nullptr;
-   cFramebuffer1.flags = 0;
-   cFramebuffer1.pAttachments = frontrp;
-   cFramebuffer1.attachmentCount = 2;
-   cFramebuffer1.width = swapchainExtent.width;
-   cFramebuffer1.height = swapchainExtent.height;
-   cFramebuffer1.layers = 1;
-   cFramebuffer1.renderPass = mainRenderpass;
-  
-   VkFramebufferCreateInfo cFramebuffer2{};
-   cFramebuffer2.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-   cFramebuffer2.pNext = nullptr;
-   cFramebuffer2.flags = 0;
-   cFramebuffer2.pAttachments = backrp;
-   cFramebuffer2.attachmentCount = 2;
-   cFramebuffer2.width = swapchainExtent.width;
-   cFramebuffer2.height = swapchainExtent.height;
-   cFramebuffer2.layers = 1;
-   cFramebuffer2.renderPass = mainRenderpass;
-
-   vkcall(vkCreateFramebuffer(device, &cFramebuffer1, nullptr, &framebuffers[0]))
-   vkcall(vkCreateFramebuffer(device, &cFramebuffer2, nullptr, &framebuffers[1]))
-  
-  globalPool.resize(3);
-
-
+  // CreateRenderPass(bk::span(&f, 1), 1, RenderPassDepthBit, &mainRenderpass);
 
   // ------------------------------------------------------------------------------------
   //  for now we hardcode these because i just dont know how
   //  handle these for now
   // ------------------------------------------------------------------------------------
+
+  mainRenderpass = RenderPassBuilder()
+        .AddAttachment(VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 
+         RenderPassBuilder::AttachmentCreateClearOnLoad | RenderPassBuilder::AttachmentCreateKeepOnStore)
+        .AddDepthAttachment(VK_FORMAT_D32_SFLOAT)
+        .BeginSubpass()
+          .SetPreserveAttachment(0)
+        .EndSubpass()
+          .SetWriteAttachment(0)
+        .BeginSubpass()
+        .EndSubpass()
+        .Build(device);
+
+  VkImageView frontrp[2]{swapchainViews[0], depthBuffer.view};
+  VkImageView backrp[2]{swapchainViews[1], depthBuffer.view};
+
+  vkcall(CreateVkFramebuffer(device, mainRenderpass, swapchainExtent, frontrp, 2, 
+  nullptr, &framebuffers[0]))
+
+
+  vkcall(CreateVkFramebuffer(device, mainRenderpass, swapchainExtent, backrp, 2, 
+  nullptr, &framebuffers[1]))
+
+  globalPool.resize(3);
   tCreateDescriptorPools(DescriptorPoolTexture, 3, globalPool.data());
+
   tCreateLightBuffers();
   CreateFixedSamplers(false);
   CreateFixedDescriptors();
@@ -281,7 +274,7 @@ int VK::CreateGraphicsState(Device& applicationDevice){
             .AddBinding(2, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
             .Build(device, nullptr);
 
-  *geoPassDescriptorLayout = DescriptorSetLayoutBuilder()
+  *lightDescriptorLayout = DescriptorSetLayoutBuilder()
             .AddBinding(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
             .AddBinding(1, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
             .Build(device, nullptr);
@@ -543,6 +536,8 @@ void VK::Draw(){
   rpass.pClearValues = col;
   rpass.framebuffer = framebuffers[curBackBuffer];
   vkCmdBeginRenderPass(mainCommandBuffer, &rpass, VK_SUBPASS_CONTENTS_INLINE);
+  
+  vkCmdNextSubpass(mainCommandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
   vkCmdBindPipeline(mainCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mainPipeline);
 
