@@ -47,8 +47,11 @@ std::pair<void*, size_t> CompileShaderSource(const char* path);
 
 
 namespace juye::driver{
+VkResult CreateVkFramebuffer(VkDevice device, VkRenderPass rpass, VkExtent2D& extent, const VkImageView* pViews, 
+        uint32_t count, VkAllocationCallbacks* allocator, VkFramebuffer* buf);
 VkResult CreateVkBuffer(VkDevice device, VkBuffer* pBuf, size_t bytes, const VkBufferUsageFlags usage);
 void DestoryVkBuffers(VkDevice device, VkBuffer* pBufs, uint32_t count, VkAllocationCallbacks* pAllocator);
+void DestoryVkFramebuffers(VkDevice device, VkFramebuffer* pBufs, uint32_t count, VkAllocationCallbacks* pAllocator);
 
 }
 

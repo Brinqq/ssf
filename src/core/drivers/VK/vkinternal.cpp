@@ -236,14 +236,37 @@ VkResult CreateVkBuffer(VkDevice device, VkBuffer* pBuf, size_t bytes, const VkB
   return vkCreateBuffer(device, &cBuffer, nullptr, pBuf);
 }
 
+
+VkResult CreateVkFramebuffer(VkDevice device, VkRenderPass rpass, VkExtent2D& extent, const VkImageView* pViews, 
+        uint32_t count, VkAllocationCallbacks* allocator, VkFramebuffer* buf){
+
+  VkFramebufferCreateInfo i{
+    VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+    nullptr,
+    0,
+    rpass,
+    count,
+    pViews,
+    extent.width,
+    extent.height,
+    1
+  };
+  return vkCreateFramebuffer(device, &i, allocator, buf);
+}
+
 void DestoryVkBuffers(VkDevice device, VkBuffer* pBufs, uint32_t count, VkAllocationCallbacks* pAllocator){
   for(int i = 0; i < count; ++i){
     vkDestroyBuffer(device, pBufs[i], pAllocator);
   }
 }
 
-
-
-
+void DestoryVkFramebuffers(VkDevice device, VkFramebuffer* pBufs, uint32_t count, VkAllocationCallbacks* pAllocator){
+  for(int i = 0; i < count; ++i){
+    vkDestroyFramebuffer(device, pBufs[i], pAllocator);
+  }
 }
+
+
+
+}//namespace juye::driver
 
