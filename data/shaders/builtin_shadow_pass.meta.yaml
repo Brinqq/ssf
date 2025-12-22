@@ -1,0 +1,26 @@
+---
+  pipeline-name: Shadow pass
+  schema-version: 0.01
+    
+  shaders:
+    - 
+     name: builtin_shadow_pass
+     entry: main
+     stage: VERTEX
+
+    - 
+     name: builtin_shadow_pass
+     entry: main
+     stage: PIXEL
+
+
+
+  input:
+
+  vetex-attributes:
+    
+  push-constants:
+
+  descriptors:
+   
+...
