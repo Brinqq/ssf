@@ -14,4 +14,13 @@ struct Vector3f{
   float z;
 };
 
+
+template<typename _Type>
+struct vec3{
+  union {
+    struct {_Type r, g, b;};
+    struct{_Type x, y, z;};
+  };
+};
+
 }
