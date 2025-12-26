@@ -16,10 +16,10 @@ Mesh LoadGLTF(const char* pFile){
     printf("%s\n", aiGetErrorString());
     juye_runtime_error();
   }
+
    aiMesh* k = *scene->mMeshes;
    aiTexture* t = *scene->mTextures;
    aiMaterial* m = *scene->mMaterials;
 
    return Mesh{};
 }
-
