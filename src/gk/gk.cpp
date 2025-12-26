@@ -1,7 +1,8 @@
 #include "gk.h"
 #include "juye/gk/prefabs.h"
 #include "core/global.h"
-#include "assets/loader.h"
+
+#include "assets/registry.h"
 
 #include "core/drivers/device.h"
 #include "core/fsystem/file.h"
@@ -146,6 +147,7 @@ void CubeMapDataCleanup(){
 }
 
 const char* kCarFile = "/Users/brinq/.dev/projects/solar-sim/juye/data/models/builtin/car.glb";
+AssetRegistry reg{};
 
 int GK::Init(VK& vulkan){
   driver = &vulkan;
@@ -153,7 +155,8 @@ int GK::Init(VK& vulkan){
   driver->CreateGraphicsState(device);
   DevInitInput();
 
-  LoadGLTF(kCarFile);
+  // LoadGLTF(kCarFile);
+  Asset as = reg.LoadModelFromGLTF(kCarFile);
 
   cam.view = glm::lookAt(glm::vec3(0.0f, -4.0f, -4.0f), glm::vec3(0.0f, 1.0f, 4.0f), glm::vec3(0.0f, 1.0f, 0.0f));
   cam.projection = glm::perspectiveFov(glm::radians(60.0f), static_cast<float>(device.windowW), static_cast<float>(device.windowH), 0.1f, 1000.0f);
@@ -166,14 +169,12 @@ int GK::Init(VK& vulkan){
   plane.push[1] = cam.view;
   plane.push[2] = cam.projection;
 
-  simpleCube.push[0] = glm::translate(simpleCube.push[0], glm::vec3(0.0f, -0.7f, 2.0f));
+
+  simpleCube.push[0] = glm::translate(simpleCube.push[0], glm::vec3(0.0f, -1.0f, 2.0f));
+  simpleCube.push[0] = glm::rotate(simpleCube.push[0], glm::radians(180.0f),glm::vec3(1.0f, 0.0f, 1.0f));
+  // simpleCube.push[0] = glm::scale(simpleCube.push[0], glm::vec3(0.2f));
+
   plane.push[0] = glm::scale(plane.push[0], glm::vec3(20.0f, 0.0f, 20.0f));
-
-
-  // juye::prefabs::TexturedCube<uint16_t> cube;
-  // juye::prefabs::TexturedPlane<uint16_t> planePrefab;
-
-
 
   Prefab cube = Prefab::Builder()
                .SetMesh(Prefab::PrefabMeshCube)
@@ -197,13 +198,13 @@ int GK::Init(VK& vulkan){
   // dat.indicesBytes = cube.indices * sizeof(uint16_t);
   // dat.vertexBytes = cube.vertices * cube.stride;
   // dat.numIndices = cube.indices;
-  
-  // dat.pVertex = (void*)k->mVertices;
-  // dat.pIndices = (void*)k->mFaces;
-  // dat.indicesBytes = cube.indices * sizeof(uint16_t);
-  // dat.vertexBytes = k->mFaces * (sizeof(float) * 8);
-  // dat.numIndices = k->mNumFaces;
 
+  dat.pVertex = (void*)as.pVertices;
+  dat.pIndices = (void*)as.pIndices;
+  dat.indicesBytes = as.numIndices  * sizeof(uint16_t);
+  dat.vertexBytes = as.numVertices * (sizeof(float) * 8);
+  dat.numIndices = as.numIndices;
+  
   dat.texture = image.data;
   dat.textureWidth = image.width;
   dat.textureHeight = image.height;
