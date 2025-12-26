@@ -422,4 +422,4 @@ public:
   void TestTriangle();
   void WriteFrustum(float* vp);
 
-};//class VK
+}; // class VK
